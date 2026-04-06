@@ -1,0 +1,39 @@
+# Sub-Question 1: : How accurately can ASR transcribe ASML customer support training videos, and how effectively can LLMs structure the transcripts into customer-support-relevant procedural segments?
+
+## 4.X Results for Sub-question 1: ASR Transcription and Transcript Structuring
+
+Sub-question 1 examined two aspects of the proposed pipeline: first, how accurately automatic speech recognition could transcribe ASML customer support training videos, and second, whether the resulting transcripts could be transformed into structured representations that capture procedural content relevant to customer support and maintenance use cases. In the implemented prototype, this stage of the pipeline produced three main types of output: raw ASR transcripts, cleaned transcript representations, and structured JSON outputs generated from those transcripts. Together, these outputs formed the transcript-processing layer required for later stages of timestamp alignment, retrieval, and micro-clip generation.
+
+### 4.X.1 ASR transcription results
+
+The first output of the pipeline consisted of machine-readable transcripts generated from the audio tracks of the source videos. In the implemented prototype, transcription was carried out using Faster-Whisper with the `large-v3` model. For each processed recording, the ASR stage produced a structured JSON output containing transcript segments together with associated metadata such as segment start and end times, language information, and, where available, word-level timestamps. This provided a transcript representation that preserved not only the recognized text, but also temporal information needed for downstream processing.
+
+A preliminary evaluation of transcription quality was conducted using Word Error Rate (WER) on four manually transcribed video excerpts. The observed WER values for the four evaluated samples were **3.87%**, **1.43%**, **2.95%**, and **5.53%**. Across these four excerpts, the **mean WER** was **3.45%**, while the **median WER** was **3.41%**. When the results were aggregated across all reference words in the evaluation set, the **micro-averaged WER** was **2.98%**.
+
+In total, the preliminary ASR evaluation covered **2,216 reference words** and identified **66 recognition errors**. Of these, **37** were substitutions, **22** were deletions, and **7** were insertions. Substitutions therefore formed the largest error category within the evaluated sample, followed by deletions, while insertions occurred comparatively infrequently.
+
+All four evaluated samples remained below the project’s initial ASR success criterion of **WER < 10%**. In addition, three of the four samples were below the project’s stretch target of **WER < 5%**, while the remaining sample, at **5.53%**, was only slightly above that threshold. The resulting range of observed WER scores was therefore **1.43% to 5.53%** across the current evaluation subset.
+
+### 4.X.2 Transcript cleaning and normalization results
+
+Following ASR transcription, the raw transcript output was processed through a cleaning and normalization stage. The purpose of this stage was not to replace the original transcription, but to generate a cleaner textual representation that could be used more effectively in subsequent structuring and retrieval tasks. The cleaning stage produced a parallel version of the transcript in which each original ASR segment was preserved while an additional cleaned version of the same text was added to the output.
+
+The cleaned transcript representation included normalization of whitespace, removal of common spoken fillers, and glossary-based normalization of domain-relevant terminology. This meant that for each transcript segment, the processed JSON output contained both a raw transcript field and a cleaned transcript field. Where word-level tokens were available from the ASR stage, the output also preserved minimally normalized token-level variants alongside the original token values. In this way, the transcript-cleaning stage produced a more readable and standardized textual representation while maintaining traceability to the original ASR output.
+
+The cleaning stage also stored metadata describing the applied normalization process. This included information such as whether filler removal had been applied, whether glossary-based normalization had been used, and whether token-level glossary normalization had been intentionally disabled. As a result, the cleaned transcript output did not simply contain modified text, but also documented how that text had been transformed before being passed to the structuring stage.
+
+### 4.X.3 Transcript structuring results
+
+After transcript cleaning, the processed transcript files were passed to an LLM-based structuring stage. This stage converted the cleaned transcript text into a structured JSON representation intended to capture the instructional and procedural content of the source videos in a more explicit form. Rather than returning only free-form text, the structuring output was designed around a predefined schema containing fields such as **title**, **summary**, **procedure type**, **skill level**, **estimated duration**, **system context**, **safety warnings**, **tools required**, **components referenced**, **prerequisites**, **steps**, and **key terms**.
+
+At the level of procedural actions, the structured output represented the transcript as an ordered list of steps. Each extracted step could contain fields such as **step number**, **step title**, **action**, **details**, **caution**, **timestamp start**, and **timestamp end**. This transformed the transcript from a continuous spoken-text representation into a more explicit procedural format that is more suitable for later use in indexing, semantic retrieval, and micro-learning applications.
+
+The structuring stage also produced outputs for transcripts that were not strongly procedural in nature. In such cases, the schema allowed the `steps` field to remain empty rather than requiring artificial procedural decomposition. This meant that the output format could represent both procedural and non-procedural transcripts within the same structured schema.
+
+In addition to the structured content itself, the prototype recorded metadata about the structuring process. The output files preserved information about the structuring run and included mechanisms for handling invalid model responses. If the model did not return valid JSON, the pipeline retried the request and, when necessary, produced a fallback output in which the expected schema fields were still present but left empty. These fallback outputs also included diagnostic fields such as error markers and raw model output for debugging. As a result, the structuring stage could continue to generate a valid output object even in cases where the model response was imperfect.
+
+### 4.X.4 Summary of results for Sub-question 1
+
+Taken together, the results of Sub-question 1 show that the first stage of the prototype successfully generated transcript-based representations from the source video material at multiple levels of processing. The ASR stage produced machine-readable transcripts with temporal metadata; the cleaning stage generated normalized transcript variants while preserving the original text; and the structuring stage transformed cleaned transcript content into JSON-based procedural representations containing titles, summaries, metadata fields, and ordered steps.
+
+The preliminary ASR evaluation further showed that the implemented transcription setup achieved low error rates across the four evaluated excerpts, with WER values between **1.43%** and **5.53%**, a **mean WER of 3.45%**, and a **micro-averaged WER of 2.98%** over **2,216 reference words**. These outputs provide the transcript layer on which the subsequent stages of timestamp alignment, segment retrieval, and micro-clip extraction are built in the wider thesis pipeline.

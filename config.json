@@ -1,0 +1,25 @@
+{
+  "project_name": "ASML AI Content Development",
+  "version": "0.1.0",
+  "data_dir": "Data\\Test",
+  "raw_videos_dir": "Data\\raw_videos",
+  "processed_dir": "Data\\processed",
+  "transcripts_dir": "Data\\transcripts",
+  "embeddings_dir": "Data\\embeddings",
+  "output_dir": "output",
+  "models_dir": "models",
+  "logs_dir": "logs",
+  "whisper_model": "large-v3",
+  "whisper_language": "en",
+  "llm_model": "gpt-4",
+  "llm_temperature": 0.1,
+  "llm_max_tokens": 4096,
+  "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+  "target_clip_duration": [
+    60,
+    120
+  ],
+  "video_fps": 30,
+  "top_k_retrieval": 5,
+  "similarity_threshold": 0.7
+}

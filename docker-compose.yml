@@ -1,0 +1,96 @@
+# =============================================================================
+# docker-compose.yml — ASML Micro-Learning Pipeline
+# =============================================================================
+# Usage:
+#   docker compose up              — Run the full pipeline
+#   docker compose run app bash    — Interactive shell for debugging
+#   docker compose run app server  — Start only the LLM server
+# =============================================================================
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        USE_GPU: "0"            # Set to "1" for GPU builds
+    image: asml-pipeline:latest
+    container_name: asml-pipeline
+
+    # --- Volume mounts -------------------------------------------------------
+    # Mount your local directories into the container.
+    # Edit the LEFT side of each ":" to match your local paths.
+    volumes:
+      # Your video files (read-only is fine)
+      - ./Data/raw_videos:/app/Data/raw_videos:ro
+
+      # ASML Glossary CSV (read-only)
+      - ./Data/ASML Glossary.csv:/app/Data/ASML Glossary.csv:ro
+
+      # Reference transcripts for WER eval (optional)
+      - ./Data/references:/app/Data/references:ro
+
+      # Pre-downloaded models (read-only)
+      - ./models/llm:/app/models/llm:ro
+      - ./models/whisper:/app/models/whisper:ro
+      - ./models/embeddings:/app/models/embeddings:ro
+
+      # Pipeline output (read-write — this is where results go)
+      - ./Data/processed:/app/Data/processed
+      - ./Data/transcripts_raw:/app/Data/transcripts_raw
+      - ./Data/transcripts_clean:/app/Data/transcripts_clean
+      - ./Data/transcripts_structured:/app/Data/transcripts_structured
+      - ./Data/transcripts_aligned:/app/Data/transcripts_aligned
+      - ./Data/transcripts_segmented:/app/Data/transcripts_segmented
+      - ./Data/embeddings:/app/Data/embeddings
+      - ./logs:/app/logs
+
+    # --- Environment variables -----------------------------------------------
+    environment:
+      - LLM_MODEL_PATH=/app/models/llm/Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf
+      - LLM_PORT=1234
+      - LLM_HOST=127.0.0.1
+      - LLM_CONTEXT_SIZE=4096
+      - WHISPER_MODEL_DIR=/app/models/whisper
+      - WHISPER_DEVICE=cpu
+      - WHISPER_COMPUTE_TYPE=int8
+      - EMBEDDING_MODEL_DIR=/app/models/embeddings/all-MiniLM-L6-v2
+      - GLOSSARY_CSV=/app/Data/ASML Glossary.csv
+
+    # --- Resource limits (optional, adjust for your machine) -----------------
+    # Uncomment and adjust if needed:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       memory: 16G
+    #     reservations:
+    #       memory: 8G
+
+    # Expose LLM server port (only needed for "server" mode or debugging)
+    ports:
+      - "1234:1234"
+
+    # Default: run the full pipeline
+    command: ["pipeline"]
+
+# =============================================================================
+# GPU variant (uncomment to enable NVIDIA GPU passthrough)
+# =============================================================================
+# services:
+#   app:
+#     ...same as above...
+#     build:
+#       args:
+#         USE_GPU: "1"
+#     environment:
+#       - WHISPER_DEVICE=cuda
+#       - WHISPER_COMPUTE_TYPE=float16
+#       - USE_GPU=1
+#       - GPU_LAYERS=99
+#     deploy:
+#       resources:
+#         reservations:
+#           devices:
+#             - driver: nvidia
+#               count: 1
+#               capabilities: [gpu]
